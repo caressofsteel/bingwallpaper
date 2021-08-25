@@ -2,9 +2,8 @@
 ### Filename:           BingWallpaper.ps1
 ### Author:             David Rodgers
 ### Date:               2021.02.09
+### Usage:              Gets/Saves/Sets Big Wallpaper of the Day
 ###---------------------------------------------------------------
-### Gets/Saves/Sets Big Wallpaper of the Day
-###
 ### The [Microsoft Bing](bing.com) search engine provides a beautiful 
 ### picture every day, and I got tired of manually downloading and 
 ### renaming the picture each time I wanted to add one to my collection.
@@ -16,6 +15,15 @@
 ### to a specified folder using the descriptive copyright title and date,
 ### and then set it ### as your desktop wallpaper. There are also options
 ### to specify the wallaper style (e.g. - Fill, Fit, Stretch, etc.) to use.
+###---------------------------------------------------------------
+
+###---------------------------------------------------------------
+### Running as a scheduled task.
+### Program/Script: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+### Args: -ExecutionPolicy Bypass -File "C:\Scripts\BingWallPaper.ps1"
+### Args: -ExecutionPolicy Bypass -File "D:\Work\Project\BingWallpaper\BingWallpaper.ps1"
+### Args: -ExecutionPolicy Unrestricted -File "D:\Work\Project\BingWallpaper\BingWallpaper.ps1"
+
 ###---------------------------------------------------------------
 
 ###---------------------------------------------------------------
@@ -120,16 +128,28 @@ $response = Invoke-WebRequest -Method Get -Uri $uri
 # Extract the image content
 $body = ConvertFrom-Json -InputObject $response.Content
 $fileurl = "https://www.bing.com/" + $body.images[0].url
-$filename = $body.images[0].copyright.Split('-(', 2)[-2].Replace(" ", "-").Replace("?", "").Replace("-", " ").TrimEnd(' ') + " - " + $body.images[0].startdate + ".jpg"
 
-# Download the picture to %APPDATA%\Microsoft\Teams\Backgrounds\Uploads
-$filepath = $PSScriptRoot+"\"+$filename
+# 2021.08.25: Try to get the UHD version if available
+$UHD_fileurl = $fileurl.Replace("1920x1080","UHD")
+
+# Determine filename for both HD & UHD images
+$filename = $body.images[0].copyright.Split('-(', 2)[-2].Replace(" ", "-").Replace("?", "").Replace("-", " ").TrimEnd(' ') + " - " + $body.images[0].startdate + "_HD.jpg"
+
+$UHD_filename = $body.images[0].copyright.Split('-(', 2)[-2].Replace(" ", "-").Replace("?", "").Replace("-", " ").TrimEnd(' ') + " - " + $body.images[0].startdate + "_UHD.jpg"
+
+# Download the images to a specified folder
+# $filepath = $PSScriptRoot+"\"+$filename
+$filepath = "C:\Users\David\OneDrive\PhotoStream\Wallpaper\Bing\" + $filename
+$UHD_filepath = "C:\Users\David\OneDrive\PhotoStream\Wallpaper\Bing\" + $UHD_filename
 Invoke-WebRequest -Method Get -Uri $fileurl -OutFile $filepath
+Invoke-WebRequest -Method Get -Uri $UHD_fileurl -OutFile $UHD_filepath
 
 # Show the generated picture filepath
 $filepath
 
-# Set-WallPaper -Image "C:\Wallpaper\Background.jpg" -Style Fit
-Set-WallPaper -Image $filepath -Style Fit
+# Use: Set-WallPaper -Image "C:\Wallpaper\Background.jpg" -Style Fit
+# Styles: Fill, Fit, Stretch, Tile, Center, Span
+Set-WallPaper -Image "$filepath" -Style Fill
 
-# You can use the script manually, as daily task, or on startup. Enjoy!
+Exit
+# END OF LINE

@@ -2,6 +2,7 @@
 ### Filename:           BingWallpaper.ps1
 ### Author:             David Rodgers
 ### Date:               2021.02.09
+### Update:             2023.02.25 - Fix for 4K UHD Downloads
 ### Usage:              Gets/Saves/Sets Big Wallpaper of the Day
 ###---------------------------------------------------------------
 ### The [Microsoft Bing](bing.com) search engine provides a beautiful 
@@ -119,37 +120,75 @@ Function Set-WallPaper {
 ### The mkt parameter defines the culture, like en-US, de-DE, etc.
 ###---------------------------------------------------------------
 
-# API
-$uri = "https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=en-US"
+Clear-Host;
 
+# API
+#$uri = https://bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=en-US
+#$uri = https://bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&nc=1618537156988&pid=hp&uhd=1&uhdwidth=3840&uhdheight=2160
+#$uri = https://bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&nc=1618537156988&pid=hp&uhd=1
+
+# 1920
+$uri = 'https://bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&pid=hp'
+# UHD?
+#$uri = 'https://bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&&mkt=en-US&pid=hp&uhd=1'
+
+#
 # Get the picture metadata
 $response = Invoke-WebRequest -Method Get -Uri $uri
+write-output $response;
+#Read-Host -Prompt "Press any key to continue"
 
+#
 # Extract the image content
 $body = ConvertFrom-Json -InputObject $response.Content
-$fileurl = "https://www.bing.com/" + $body.images[0].url
+$HD_ImageURL = "https://bing.com" + $body.images[0].url
 
+#
 # 2021.08.25: Try to get the UHD version if available
-$UHD_fileurl = $fileurl.Replace("1920x1080","UHD")
+#https://bing.com/th?id=OHR.PolarBearFrost_EN-US9888741440_UHD.jpg&rf=LaDigue_UHD.jpg&w=3840&h=2160&c=8&rs=1&o=3&r=0
+$UHD_filename = $HD_ImageURL.Replace("1920x1080","UHD")
+$UHD_ImageURL = $UHD_filename + "&w=3840&h=2160&c=8&rs=1&o=3&r=0"
 
+#
 # Determine filename for both HD & UHD images
-$filename = $body.images[0].copyright.Split('-(', 2)[-2].Replace(" ", "-").Replace("?", "").Replace("-", " ").TrimEnd(' ') + " - " + $body.images[0].startdate + "_HD.jpg"
-
+$HD_filename = $body.images[0].copyright.Split('-(', 2)[-2].Replace(" ", "-").Replace("?", "").Replace("-", " ").TrimEnd(' ') + " - " + $body.images[0].startdate + "_HD.jpg"
 $UHD_filename = $body.images[0].copyright.Split('-(', 2)[-2].Replace(" ", "-").Replace("?", "").Replace("-", " ").TrimEnd(' ') + " - " + $body.images[0].startdate + "_UHD.jpg"
 
-# Download the images to a specified folder
+#
+# Set folder paths for download
 # $filepath = $PSScriptRoot+"\"+$filename
-$filepath = "C:\Users\David\OneDrive\PhotoStream\Wallpaper\Bing\" + $filename
+$HD_filepath = "C:\Users\David\OneDrive\PhotoStream\Wallpaper\1920\" + $HD_filename
 $UHD_filepath = "C:\Users\David\OneDrive\PhotoStream\Wallpaper\Bing\" + $UHD_filename
-Invoke-WebRequest -Method Get -Uri $fileurl -OutFile $filepath
-Invoke-WebRequest -Method Get -Uri $UHD_fileurl -OutFile $UHD_filepath
 
+<#
+# DEBUG
+write-output "HD ----------------------------"
+write-output $HD_ImageURL
+write-output $HD_filename
+write-output $HD_filepath
+write-output "UHD ----------------------------"
+write-output $UHD_ImageURL
+write-output $UHD_filename
+write-output $UHD_filepath
+Read-Host -Prompt "Press any key to continue"
+#exit
+#>
+
+#
+# Download the images to specified folders
+Invoke-WebRequest -Method Get -Uri $HD_ImageURL -OutFile $HD_filepath
+Invoke-WebRequest -Method Get -Uri $UHD_ImageURL -OutFile $UHD_filepath
+
+#
 # Show the generated picture filepath
-$filepath
+write-output "Writing Images to.."
+write-output $HD_filepath
+write-output $UHD_filepath
 
+#
 # Use: Set-WallPaper -Image "C:\Wallpaper\Background.jpg" -Style Fit
 # Styles: Fill, Fit, Stretch, Tile, Center, Span
-Set-WallPaper -Image "$filepath" -Style Fill
+Set-WallPaper -Image "$UHD_filepath" -Style Fill
 
 Exit
 # END OF LINE
